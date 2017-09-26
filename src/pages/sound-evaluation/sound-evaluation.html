@@ -1,0 +1,91 @@
+<!--
+  Generated template for the SoundEvaluationPage page.
+
+  See http://ionicframework.com/docs/components/#navigation for more info on
+  Ionic pages and navigation.
+-->
+<ion-header>
+
+  <ion-navbar>
+    <ion-title>Äänen arviointi</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content>
+  <ion-card>
+    <ion-card-header>
+      <ion-icon name="information-circle-outline"></ion-icon>
+      Ohje
+    </ion-card-header>
+    <ion-card-content>
+      Paina play (<ion-icon name="play" small></ion-icon>) alapalkista ja kuuntele
+      ääntä. Vastaa sitten alla oleviin kysymyksiin ja lopuksi paina "Seuraava" sivun
+      alalaidasta.
+    </ion-card-content>
+  </ion-card>
+
+  <form [formGroup]="profile" (ngSubmit)="evaluate(profile)">
+    <ion-list>
+      <ion-item-divider sticky>
+        Kuinka samankaltainen kuulemasi ääni on oman tinnituksesi kanssa?
+      </ion-item-divider>
+      <ion-item align-items-center>
+        <ion-range formControlName="similarity" item-content>
+          <ion-label range-left>
+            <ion-icon
+              [style.visibility]="(submitAttempted && profile.get('similarity').hasError('required'))?'visible':'hidden'"
+              color='danger'
+              name="ios-alert"></ion-icon>
+          </ion-label>
+          <ion-label range-left>Ei lainkaan</ion-label>
+          <ion-label range-right>Täysin identtinen</ion-label>
+        </ion-range>
+      </ion-item>
+      <ion-item-divider sticky>
+        Kuinka hyvin seuraavat adjektiivit kuvaavat kuulemaasi ääntä?
+      </ion-item-divider>
+      <ion-item *ngFor="let attr of attributes" align-items-center>
+        <ion-range [formControlName]="attr.key" item-content>
+          <ion-label range-left fixed>{{attr.name}}</ion-label>
+          <ion-label range-left>
+            <ion-icon
+              [style.visibility]="(submitAttempted && profile.get(attr.key).hasError('required'))?'visible':'hidden'"
+              color='danger'
+              name="ios-alert"></ion-icon>
+          </ion-label>
+          <ion-label range-left>Ei lainkaan</ion-label>
+          <ion-label range-right>Täydellisesti</ion-label>
+        </ion-range>
+      </ion-item>
+    </ion-list>
+    <div text-center block>
+      <button ion-button round large type="submit">Seuraava</button>
+    </div>
+
+  </form>
+
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    <ion-grid>
+      <ion-row>
+        <ion-col col-1 offset-5>
+          <button *ngIf="!playing" ion-button icon-only clear block color="dark" (click)="startSound()">
+            <ion-icon name="play"></ion-icon>
+          </button>
+          <button *ngIf="playing" ion-button icon-only clear block color="dark" (click)="pauseSound()">
+            <ion-icon name="pause"></ion-icon>
+          </button>
+        </ion-col>
+        <ion-col col-1>
+          <button ion-button icon-only clear block color="dark">
+            <ion-icon name="volume-off"></ion-icon>
+          </button>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </ion-toolbar>
+</ion-footer>

@@ -1,14 +1,31 @@
 <ion-header>
   <ion-navbar>
     <ion-title>
-      Ionic Blank
+      Tinnitusäänen kuvailu
     </ion-title>
   </ion-navbar>
 </ion-header>
 
-<ion-content padding>
-  The world is your oyster.
-  <p>
-    If you get lost, the <a href="http://ionicframework.com/docs/v2">docs</a> will be your guide.
-  </p>
+<ion-content>
+  <ion-card>
+    <ion-card-header>
+      Tervetuloa tutkimukseen
+    </ion-card-header>
+    <ion-card-content>
+      Kiitos että osallistutte HYKS korvaklinikan tutkimukseen!
+      Täyttäkää alle omat tietonne ennen aloittamista.
+    </ion-card-content>
+  </ion-card>
+
+  <form [formGroup]="info" (ngSubmit)="startEvaluation(info)">
+    <ion-list>
+      <ion-item>
+        <ion-label floating>Ikä</ion-label>
+        <ion-input type="number" formControlName="age"></ion-input>
+      </ion-item>
+    </ion-list>
+    <div block text-center>
+      <button ion-button round large type="submit" [disabled]="!info.valid">Aloita</button>
+    </div>
+  </form>
 </ion-content>
