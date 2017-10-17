@@ -73,10 +73,10 @@
     <ion-grid>
       <ion-row>
         <ion-col col-1 offset-5>
-          <button *ngIf="!playing" ion-button icon-only clear block color="dark" (click)="startSound()">
+          <button *ngIf="!playing" ion-button icon-only clear block color="dark" (tap)="startSound()">
             <ion-icon name="play"></ion-icon>
           </button>
-          <button *ngIf="playing" ion-button icon-only clear block color="dark" (click)="pauseSound()">
+          <button *ngIf="playing" ion-button icon-only clear block color="dark" (tap)="pauseSound()">
             <ion-icon name="pause"></ion-icon>
           </button>
         </ion-col>

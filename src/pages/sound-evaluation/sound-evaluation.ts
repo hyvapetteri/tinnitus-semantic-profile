@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { NavController, NavParams } from 'ionic-angular';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { NativeAudio } from '@ionic-native/native-audio';
+import { File } from '@ionic-native/file';
 import { UserProvider } from '../../providers/user/user';
 
 /**
@@ -79,7 +80,8 @@ export const SOUND_ATTRIBUTES: Array<{key: string, name: string}> = [
 export class SoundEvaluationPage {
   private profile: FormGroup;
   private attributes: Array<{key:string, name:string}>;
-  //private sound_evaluations: Array<{key:string, name:string}>;
+  private outputFile: string;
+  private output: Array<string>;
   private submitAttempted: boolean = false;
   private playing: boolean = false;
   private soundId: string;
@@ -87,10 +89,21 @@ export class SoundEvaluationPage {
   private soundIndex: number;
   private uid: string;
 
-  constructor(private formBuilder: FormBuilder, private nativeAudio: NativeAudio, private userProvider: UserProvider,
-              public navCtrl: NavController, public navParams: NavParams) {
+  constructor(private formBuilder: FormBuilder, private nativeAudio: NativeAudio,
+              private file: File,
+              private userProvider: UserProvider, public navCtrl: NavController,
+              public navParams: NavParams) {
 
     this.uid = this.userProvider.username;
+
+    this.outputFile = 'ratings-' + this.uid + '.txt';
+    this.file.checkDir(this.file.dataDirectory, 'tinnitus-semantics-experiment')
+      .then(
+        _ => console.log('App directory found.'),
+        err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment',false)
+      )
+      .then(_ => this.file.createFile(this.file.dataDirectory + '/tinnitus-semantics-experiment', this.outputFile, true))
+      .catch(err => console.log('Could not create log file: ' + err));
 
     this.sounds = SOUNDS;
     for (let i = this.sounds.length - 1; i > 0; i--) {
@@ -115,12 +128,18 @@ export class SoundEvaluationPage {
   }
 
   startSound() {
+    if (this.playing) {
+      return;
+    }
     this.nativeAudio.loop(this.soundId).then(
       () => this.playing = true
     );
   }
 
   pauseSound() {
+    if (!this.playing) {
+      return;
+    }
     this.nativeAudio.stop(this.soundId).then(
       () => this.playing = false
     );
@@ -138,6 +157,9 @@ export class SoundEvaluationPage {
     else {
       this.pauseSound();
       this.nativeAudio.unload(this.soundId);
+
+      this.output.push(form_profile.value);
+      this.file.writeExistingFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, this.output.join('\n'));
 
       this.soundIndex += 1;
       this.soundId = this.sounds[this.soundIndex];
