@@ -97,7 +97,7 @@ export class SoundEvaluationPage {
         err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment', false)
       )
       .then(_ => this.file.writeFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, basic_info_text, true))
-      .catch(err => console.log('Could not create log file: ' + err));
+      .catch(err => this.showError('Could not create log file: ' + err));
 
     this.sounds = SOUNDS;
     for (let i = this.sounds.length - 1; i > 0; i--) {
@@ -186,8 +186,7 @@ export class SoundEvaluationPage {
     this.submitAttempted = true;
     if (!form_profile.valid) {
       console.log('missing inputs');
-    }
-    else {
+    } else {
       this.pauseSound().then(() => {
         if (!this.tinnitus_trial) {
           return this.nativeAudio.unload(this.soundId);
@@ -214,8 +213,21 @@ export class SoundEvaluationPage {
           this.content.resize();
           this.showInstructions();
         }
-      }).catch(err => console.log('error while moving to the next sound: ' + err));
+      }).catch(err => this.showError('error while moving to the next sound: ' + err));
     }
+  }
+
+  showError(message:string) {
+    let alert = this.alertCtrl.create({
+      title: 'Virhe',
+      subTitle: 'Tapahtui virhe: ' + message,
+      buttons: [
+        {
+          text: 'OK'
+        }
+      ]
+    });
+    alert.present();
   }
 
   showInstructions() {
