@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { NavController, NavParams, AlertController, Content } from 'ionic-angular';
+import { NavController, NavParams, AlertController, Content, Platform } from 'ionic-angular';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { NativeAudio } from '@ionic-native/native-audio';
 import { File } from '@ionic-native/file';
@@ -82,22 +82,25 @@ export class SoundEvaluationPage {
   constructor(private formBuilder: FormBuilder, private nativeAudio: NativeAudio,
               private file: File,
               private userProvider: UserProvider, public navCtrl: NavController,
-              public navParams: NavParams, public alertCtrl: AlertController) {
+              public navParams: NavParams, public alertCtrl: AlertController,
+              public platform: Platform) {
 
     console.log('SoundEvaluationPage constructor!');
     this.uid = this.userProvider.username;
     this.tinnitus_trial = true;
     this.soundId = 'tinnitus';
 
-    this.outputFile = 'ratings-' + this.uid + '.txt';
-    let basic_info_text = 'uid: ' + this.uid + ', age: ' + this.userProvider.age + ', gender: ' + this.userProvider.gender + '\n';
-    this.file.checkDir(this.file.dataDirectory, 'tinnitus-semantics-experiment')
-      .then(
-        _ => console.log('App directory found.'),
-        err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment', false)
-      )
-      .then(_ => this.file.writeFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, basic_info_text, true))
-      .catch(err => this.showError('Could not create log file: ' + err));
+    this.platform.ready().then(() => {
+      this.outputFile = 'ratings-' + this.uid + '.txt';
+      let basic_info_text = 'uid: ' + this.uid + ', age: ' + this.userProvider.age + ', gender: ' + this.userProvider.gender + '\n';
+      this.file.checkDir(this.file.dataDirectory, 'tinnitus-semantics-experiment')
+        .then(
+          _ => console.log('App directory found.'),
+          err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment', false)
+        )
+        .then(_ => this.file.writeFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, basic_info_text, true))
+        .catch(err => this.showError('Could not create log file: ' + err));
+    });
 
     this.sounds = SOUNDS;
     for (let i = this.sounds.length - 1; i > 0; i--) {
