@@ -11,6 +11,7 @@ import 'rxjs/add/operator/map';
 export class UserProvider {
   private _username: string;
   private _age: number;
+  private _gender: string;
 
   constructor() {
   }
@@ -29,6 +30,14 @@ export class UserProvider {
 
   set age(newage:number) {
     this._age = newage;
+  }
+
+  get gender():string {
+    return this._gender;
+  }
+
+  set gender(gen:string) {
+    this._gender = gen;
   }
 
 }

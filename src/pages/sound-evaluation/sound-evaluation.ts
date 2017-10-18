@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
-import { NavController, NavParams } from 'ionic-angular';
+import { Component, ViewChild } from '@angular/core';
+import { NavController, NavParams, AlertController, Content } from 'ionic-angular';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { NativeAudio } from '@ionic-native/native-audio';
 import { File } from '@ionic-native/file';
 import { UserProvider } from '../../providers/user/user';
+import { HomePage } from '../home/home';
 
 /**
  * Generated class for the SoundEvaluationPage page.
@@ -12,38 +13,23 @@ import { UserProvider } from '../../providers/user/user';
  * Ionic pages and navigation.
  */
 export const SOUNDS: Array<string> = [
-  'noise_0-Hz-AM_1000-Hz',
-  'noise_0-Hz-AM_10000-Hz',
-  'noise_0-Hz-AM_6000-Hz',
-  'noise_0-Hz-AM_8000-Hz',
-  'noise_10-Hz-AM_1000-Hz',
-  'noise_10-Hz-AM_10000-Hz',
-  'noise_10-Hz-AM_6000-Hz',
-  'noise_10-Hz-AM_8000-Hz',
-  'noise_20-Hz-AM_1000-Hz',
-  'noise_20-Hz-AM_10000-Hz',
-  'noise_20-Hz-AM_6000-Hz',
-  'noise_20-Hz-AM_8000-Hz',
-  'noise_30-Hz-AM_1000-Hz',
-  'noise_30-Hz-AM_10000-Hz',
-  'noise_30-Hz-AM_6000-Hz',
-  'noise_30-Hz-AM_8000-Hz',
-  'sine_0-Hz-AM_1000-Hz',
-  'sine_0-Hz-AM_10000-Hz',
-  'sine_0-Hz-AM_6000-Hz',
-  'sine_0-Hz-AM_8000-Hz',
-  'sine_10-Hz-AM_1000-Hz',
-  'sine_10-Hz-AM_10000-Hz',
-  'sine_10-Hz-AM_6000-Hz',
-  'sine_10-Hz-AM_8000-Hz',
-  'sine_20-Hz-AM_1000-Hz',
-  'sine_20-Hz-AM_10000-Hz',
-  'sine_20-Hz-AM_6000-Hz',
-  'sine_20-Hz-AM_8000-Hz',
-  'sine_30-Hz-AM_1000-Hz',
-  'sine_30-Hz-AM_10000-Hz',
-  'sine_30-Hz-AM_6000-Hz',
-  'sine_30-Hz-AM_8000-Hz'
+  "sine_0-Hz-AM_1000-Hz",
+  "norm_noise_0-Hz-AM_1000-Hz",
+  "norm_noise_0-Hz-AM_125-Hz",
+  "norm_noise_0-Hz-AM_16000-Hz",
+  "norm_noise_0-Hz-AM_8000-Hz",
+  "norm_noise_10-Hz-AM_1000-Hz",
+  "norm_noise_10-Hz-AM_125-Hz",
+  "norm_noise_10-Hz-AM_16000-Hz",
+  "norm_noise_10-Hz-AM_8000-Hz",
+  "norm_pink_noise",
+  "norm_sine_0-Hz-AM_125-Hz",
+  "norm_sine_0-Hz-AM_16000-Hz",
+  "norm_sine_0-Hz-AM_8000-Hz",
+  "norm_sine_10-Hz-AM_1000-Hz",
+  "norm_sine_10-Hz-AM_125-Hz",
+  "norm_sine_10-Hz-AM_16000-Hz",
+  "norm_sine_10-Hz-AM_8000-Hz"
 ];
 
 export const SOUND_ATTRIBUTES: Array<{key: string, name: string}> = [
@@ -64,13 +50,13 @@ export const SOUND_ATTRIBUTES: Array<{key: string, name: string}> = [
  {key: 'crickets', name: 'Sirittävä'},
  {key: 'bubbling', name: 'Pulputtava'},
  {key: 'rumbling', name: 'Huriseva'},
- {key: 'drumming', name: 'Koliseva'},
- {key: 'tingling', name: 'Kilisevä'},
- {key: 'wailing', name: 'Ulvova'},
- {key: 'rattling', name: 'Rätisevä'},
- {key: 'jingling', name: 'Helisevä'},
- {key: 'crackling', name: 'Raksahteleva'},
- {key: 'crickling', name: 'Ritisevä'}
+ // {key: 'drumming', name: 'Koliseva'},
+ // {key: 'tingling', name: 'Kilisevä'},
+ {key: 'wailing', name: 'Ulvova'}
+ // {key: 'rattling', name: 'Rätisevä'},
+ // {key: 'jingling', name: 'Helisevä'},
+ // {key: 'crackling', name: 'Raksahteleva'},
+ // {key: 'crickling', name: 'Ritisevä'}
 ];
 
 @Component({
@@ -81,28 +67,36 @@ export class SoundEvaluationPage {
   private profile: FormGroup;
   private attributes: Array<{key:string, name:string}>;
   private outputFile: string;
-  private output: Array<string>;
+  private output: Array<string> = [];
   private submitAttempted: boolean = false;
   private playing: boolean = false;
   private soundId: string;
   private sounds: Array<string>;
   private soundIndex: number;
   private uid: string;
+  private volume: number;
+  private vol_icon: string;
+  private tinnitus_trial: boolean;
+  @ViewChild(Content) content: Content;
 
   constructor(private formBuilder: FormBuilder, private nativeAudio: NativeAudio,
               private file: File,
               private userProvider: UserProvider, public navCtrl: NavController,
-              public navParams: NavParams) {
+              public navParams: NavParams, public alertCtrl: AlertController) {
 
+    console.log('SoundEvaluationPage constructor!');
     this.uid = this.userProvider.username;
+    this.tinnitus_trial = true;
+    this.soundId = 'tinnitus';
 
     this.outputFile = 'ratings-' + this.uid + '.txt';
+    let basic_info_text = 'uid: ' + this.uid + ', age: ' + this.userProvider.age + ', gender: ' + this.userProvider.gender + '\n';
     this.file.checkDir(this.file.dataDirectory, 'tinnitus-semantics-experiment')
       .then(
         _ => console.log('App directory found.'),
-        err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment',false)
+        err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment', false)
       )
-      .then(_ => this.file.createFile(this.file.dataDirectory + '/tinnitus-semantics-experiment', this.outputFile, true))
+      .then(_ => this.file.writeFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, basic_info_text, true))
       .catch(err => console.log('Could not create log file: ' + err));
 
     this.sounds = SOUNDS;
@@ -110,7 +104,7 @@ export class SoundEvaluationPage {
       let j = Math.floor(Math.random() * (i + 1));
       [this.sounds[i], this.sounds[j]] = [this.sounds[j], this.sounds[i]];
     }
-    this.soundIndex = 0;
+    this.soundIndex = -1;
 
     this.attributes = SOUND_ATTRIBUTES;
 
@@ -121,26 +115,39 @@ export class SoundEvaluationPage {
     }
     this.profile = this.formBuilder.group(form_attributes);
 
-    this.soundId = this.sounds[this.soundIndex];
-    this.nativeAudio.preloadComplex(this.soundId, 'assets/audio/' + this.soundId + '.wav', 0.6, 1, 0).then(
+    if (!this.tinnitus_trial) {
+      this.loadSound(this.soundIndex);
+    } else {
+      let tmp_similarity_ctrl = this.profile.controls['similarity'];
+      tmp_similarity_ctrl.markAsDirty();
+      tmp_similarity_ctrl.markAsTouched();
+      tmp_similarity_ctrl.setValue(50);
+    }
+  }
+
+  loadSound(snd_idx) {
+    this.soundId = this.sounds[snd_idx];
+    this.volume = 0.6;
+    this.vol_icon = 'volume-down';
+    return this.nativeAudio.preloadComplex(this.soundId, 'assets/audio/' + this.soundId + '.wav', this.volume, 1, 0).then(
       () => console.log('Sound loaded'),
-      () => console.log('Error loading sound'));
+      err => console.log('Error loading sound: ' + err));
   }
 
   startSound() {
     if (this.playing) {
-      return;
+      return new Promise((resolve, reject) => resolve('playing'));
     }
-    this.nativeAudio.loop(this.soundId).then(
+    return this.nativeAudio.loop(this.soundId).then(
       () => this.playing = true
     );
   }
 
   pauseSound() {
     if (!this.playing) {
-      return;
+      return new Promise((resolve, reject) => resolve('paused'));
     }
-    this.nativeAudio.stop(this.soundId).then(
+    return this.nativeAudio.stop(this.soundId).then(
       () => this.playing = false
     );
   }
@@ -149,23 +156,123 @@ export class SoundEvaluationPage {
     console.log('ionViewDidLoad SoundEvaluationPage');
   }
 
+  volumeDown() {
+    if (this.volume > 0.1) {
+      this.volume -= 0.1;
+    }
+    this.updateVolumeIcon();
+    return this.nativeAudio.setVolumeForComplexAsset(this.soundId, this.volume);
+  }
+
+  volumeUp() {
+    if (this.volume <= 0.9) {
+      this.volume += 0.1;
+    }
+    this.updateVolumeIcon();
+    return this.nativeAudio.setVolumeForComplexAsset(this.soundId, this.volume);
+  }
+
+  updateVolumeIcon() {
+    if (this.volume <= 0.2) {
+      this.vol_icon = 'volume-mute';
+    } else if (this.volume <= 0.7) {
+      this.vol_icon = 'volume-down';
+    } else {
+      this.vol_icon = 'volume-up';
+    }
+  }
+
   evaluate(form_profile) {
     this.submitAttempted = true;
     if (!form_profile.valid) {
       console.log('missing inputs');
     }
     else {
-      this.pauseSound();
-      this.nativeAudio.unload(this.soundId);
-
-      this.output.push(form_profile.value);
-      this.file.writeExistingFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, this.output.join('\n'));
-
-      this.soundIndex += 1;
-      this.soundId = this.sounds[this.soundIndex];
-      this.nativeAudio.preloadComplex(this.soundId, 'assets/audio/' + this.soundId + '.wav', 0.6, 1, 0);
-      this.profile.reset();
-      this.submitAttempted = false;
+      this.pauseSound().then(() => {
+        if (!this.tinnitus_trial) {
+          return this.nativeAudio.unload(this.soundId);
+        }
+      }).then(() => {
+        let tmp_profile = Object.assign({}, this.profile.value);
+        tmp_profile.sound_id = this.soundId;
+        tmp_profile.volume = this.volume;
+        this.output.push(JSON.stringify(tmp_profile));
+        return this.file.writeExistingFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, this.output.join('\n'));
+      }).then(() => {
+        this.soundIndex += 1;
+        if (this.soundIndex == this.sounds.length) {
+          this.allDone();
+          return;
+        }
+        return this.loadSound(this.soundIndex);
+      }).then(() => {
+        this.content.scrollToTop();
+        this.profile.reset();
+        this.submitAttempted = false;
+        if (this.tinnitus_trial) {
+          this.tinnitus_trial = false;
+          this.content.resize();
+          this.showInstructions();
+        }
+      }).catch(err => console.log('error while moving to the next sound: ' + err));
     }
+  }
+
+  showInstructions() {
+    let alert = this.alertCtrl.create({
+      title: 'Seuraava vaihe',
+      subTitle: `Nyt tehtävänä
+      on arvioida kuulokkeista soitettavia ääniä samalla tavalla kuin äsken
+      tinnitusäänen osalta. Aloita painamalla play-nappia alapalkista`,
+      buttons: [
+        {
+          text: 'OK'
+        }
+      ]
+    });
+    alert.present();
+  }
+
+  finish() {
+    let alert = this.alertCtrl.create({
+      title: 'Lopeta tutkimus',
+      subTitle: `Olet lopettamassa tutkimuksen. Tutkimusta ei voi enää jatkaa
+      samasta kohdasta. Haluatko lopettaa? Varmistathan että
+      osallistujatunnisteesi ` + this.uid + ` on merkitty suostumuslomakkeeseen.`,
+      buttons: [
+        {
+          text: 'Kyllä',
+          handler: () => {
+            this.userProvider.age = 0;
+            this.userProvider.username = '';
+            this.navCtrl.setRoot(HomePage);
+          }
+        },
+        {
+          text: 'Peruuta',
+          role: 'cancel'
+        }
+      ]
+    });
+    alert.present();
+  }
+
+  allDone() {
+    let alert = this.alertCtrl.create({
+      title: 'Kiitos!',
+      subTitle: `Kiitos osallistumisestanne tutkimukseen! Varmistathan että
+      osallistujatunnisteesi ` + this.uid + ` on merkitty suostumuslomakkeeseen.`,
+      buttons: [
+        {
+          text: 'Sulje',
+          handler: () => {
+            this.userProvider.age = 0;
+            this.userProvider.username = '';
+            this.navCtrl.setRoot(HomePage);
+          }
+        }
+      ]
+    });
+    alert.present();
   }
 }

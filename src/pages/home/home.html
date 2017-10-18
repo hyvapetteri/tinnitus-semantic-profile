@@ -1,7 +1,7 @@
 <ion-header>
   <ion-navbar>
     <ion-title>
-      Tinnitusäänen kuvailu
+      Aloitus
     </ion-title>
   </ion-navbar>
 </ion-header>
@@ -22,6 +22,15 @@
       <ion-item>
         <ion-label floating>Ikä</ion-label>
         <ion-input type="number" formControlName="age"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label>Sukupuoli</ion-label>
+        <ion-select formControlName="gender">
+          <ion-option>Nainen</ion-option>
+          <ion-option>Mies</ion-option>
+          <ion-option>Muu</ion-option>
+          <ion-option>En halua kertoa</ion-option>
+        </ion-select>
       </ion-item>
     </ion-list>
     <div block text-center>

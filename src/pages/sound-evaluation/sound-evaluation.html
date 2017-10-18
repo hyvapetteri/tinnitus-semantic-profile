@@ -7,7 +7,11 @@
 <ion-header>
 
   <ion-navbar>
-    <ion-title>Äänen arviointi</ion-title>
+    tunniste: {{uid}}
+    <ion-title>Äänen arviointi ({{soundIndex + 1}}/{{sounds.length}})</ion-title>
+    <ion-buttons end>
+      <button ion-button outline (tap)="finish()">Lopeta</button>
+    </ion-buttons>
   </ion-navbar>
 
 </ion-header>
@@ -15,36 +19,55 @@
 
 <ion-content>
   <ion-card>
-    <ion-card-header>
-      <ion-icon name="information-circle-outline"></ion-icon>
-      Ohje
-    </ion-card-header>
     <ion-card-content>
-      Paina play (<ion-icon name="play" small></ion-icon>) alapalkista ja kuuntele
-      ääntä. Vastaa sitten alla oleviin kysymyksiin ja lopuksi paina "Seuraava" sivun
-      alalaidasta.
+      <ion-card-title>
+        <ion-icon name="information-circle-outline"></ion-icon>
+        Ohje
+      </ion-card-title>
+      <ng-container *ngIf="!tinnitus_trial">
+        <p>
+          Paina play (<ion-icon name="play" small></ion-icon>) alapalkista ja kuuntele
+          ääntä. Äänenvoimakkuutta voi säätää alapalkin + ja - painikkeista.
+          Vastaa sitten jokaiseen alla olevaan kysymykseen ja lopuksi paina "Seuraava" sivun
+          alalaidasta.
+        </p>
+        <p>
+          Pyydämme, että arvioisitte vähintään viisi ääntä. Ääniä on kaikkiaan {{sounds.length}},
+          joten voitte myös arvioida enemmän ääniä -- tästä olisi suuri apu tutkimukselle!
+        </p>
+      </ng-container>
+      <ng-container *ngIf="tinnitus_trial">
+        <p>
+          Kerro kuinka hyvin alla listatut adjektiivit kuvaavat <b>omaa tinnitustasi</b>.
+          Mikäli tinnitusääniä on useampia, vastaa voimakkaimman tai häiritsevimmän äänen mukaan.
+          Vastaa jokaiseen kysymykseen. Lopuksi paina "Seuraava" sivun alalaidasta.
+        </p>
+      </ng-container>
     </ion-card-content>
   </ion-card>
 
   <form [formGroup]="profile" (ngSubmit)="evaluate(profile)">
     <ion-list>
-      <ion-item-divider sticky>
+      <ion-item-divider sticky *ngIf="!tinnitus_trial">
         Kuinka samankaltainen kuulemasi ääni on oman tinnituksesi kanssa?
       </ion-item-divider>
-      <ion-item align-items-center>
+      <ion-item align-items-center *ngIf="!tinnitus_trial">
         <ion-range formControlName="similarity" item-content>
           <ion-label range-left>
             <ion-icon
               [style.visibility]="(submitAttempted && profile.get('similarity').hasError('required'))?'visible':'hidden'"
-              color='danger'
+              color="danger"
               name="ios-alert"></ion-icon>
           </ion-label>
           <ion-label range-left>Ei lainkaan</ion-label>
           <ion-label range-right>Täysin identtinen</ion-label>
         </ion-range>
       </ion-item>
-      <ion-item-divider sticky>
+      <ion-item-divider sticky *ngIf="!tinnitus_trial">
         Kuinka hyvin seuraavat adjektiivit kuvaavat kuulemaasi ääntä?
+      </ion-item-divider>
+      <ion-item-divider sticky *ngIf="tinnitus_trial">
+        Kuinka hyvin seuraavat adjektiivit kuvaavat omaa tinnitustasi?
       </ion-item-divider>
       <ion-item *ngFor="let attr of attributes" align-items-center>
         <ion-range [formControlName]="attr.key" item-content>
@@ -52,7 +75,7 @@
           <ion-label range-left>
             <ion-icon
               [style.visibility]="(submitAttempted && profile.get(attr.key).hasError('required'))?'visible':'hidden'"
-              color='danger'
+              color="danger"
               name="ios-alert"></ion-icon>
           </ion-label>
           <ion-label range-left>Ei lainkaan</ion-label>
@@ -60,29 +83,40 @@
         </ion-range>
       </ion-item>
     </ion-list>
+    <div ion-text text-center block *ngIf="submitAttempted && !profile.valid" color="danger">
+      Kaikkiin kohtiin ei ole vastattu. Ole hyvä ja anna vastaus myös
+      punaisella merkittyihin kohtiin.
+    </div>
     <div text-center block>
       <button ion-button round large type="submit">Seuraava</button>
     </div>
+    <br/><br/><br/><br/><br/>
 
   </form>
 
 </ion-content>
 
-<ion-footer>
+<ion-footer *ngIf="!tinnitus_trial">
   <ion-toolbar>
     <ion-grid>
       <ion-row>
-        <ion-col col-1 offset-5>
-          <button *ngIf="!playing" ion-button icon-only clear block color="dark" (tap)="startSound()">
+        <ion-col col-2 offset-3>
+          <button *ngIf="!playing" ion-button icon-only outline block color="dark" (tap)="startSound()">
             <ion-icon name="play"></ion-icon>
           </button>
-          <button *ngIf="playing" ion-button icon-only clear block color="dark" (tap)="pauseSound()">
+          <button *ngIf="playing" ion-button icon-only outline block color="dark" (tap)="pauseSound()">
             <ion-icon name="pause"></ion-icon>
           </button>
         </ion-col>
-        <ion-col col-1>
-          <button ion-button icon-only clear block color="dark">
-            <ion-icon name="volume-off"></ion-icon>
+        <ion-col col-3 offset-2>
+          <button ion-button icon-only outline round color="dark" (tap)="volumeDown()">
+            <ion-icon name="remove"></ion-icon>
+          </button>
+          <button ion-button icon-only clear color="dark">
+            <ion-icon [name]="vol_icon" style="font-size: 40px"></ion-icon>
+          </button>
+          <button ion-button icon-only outline round color="dark" (tap)="volumeUp()">
+            <ion-icon name="add"></ion-icon>
           </button>
         </ion-col>
       </ion-row>
