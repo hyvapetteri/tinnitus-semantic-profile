@@ -156,7 +156,7 @@ export class SoundEvaluationPage {
   }
 
   ionViewDidLoad() {
-    console.log('ionViewDidLoad SoundEvaluationPage');
+    //console.log('ionViewDidLoad SoundEvaluationPage');
   }
 
   volumeDown() {
@@ -290,4 +290,5 @@ export class SoundEvaluationPage {
     });
     alert.present();
   }
+
 }
