@@ -91,6 +91,7 @@ export class SoundEvaluationPage {
     this.soundId = 'tinnitus';
 
     this.platform.ready().then(() => {
+      // trigger build at ionic dashboard
       this.outputFile = 'ratings-' + this.uid + '.txt';
       let basic_info_text = 'uid: ' + this.uid + ', age: ' + this.userProvider.age + ', gender: ' + this.userProvider.gender + '\n';
       this.file.checkDir(this.file.dataDirectory, 'tinnitus-semantics-experiment')
