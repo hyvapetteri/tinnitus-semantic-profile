@@ -144,7 +144,7 @@ export class SoundEvaluationPage {
     this.soundId = this.sounds[snd_idx];
     this.volume = 0.4;
     this.vol_icon = 'volume-down';
-    return this.nativeAudio.preloadComplex(this.soundId, 'assets/audio/' + this.soundId + '.wav', this.volume, 1, 0).then(
+    return this.nativeAudio.preloadComplex(this.soundId, './assets/audio/' + this.soundId + '.wav', this.volume, 1, 0).then(
       () => console.log('Sound loaded'),
       err => this.showError('Error loading sound: ' + err));
   }
