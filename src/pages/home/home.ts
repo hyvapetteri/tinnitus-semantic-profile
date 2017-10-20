@@ -70,6 +70,7 @@ export class HomePage {
   showActionSheet() {
     let actionSheet = this.actionsheetCtrl.create({
       title: 'Send the results',
+      subTitle: 'Version 0.0.20',
       buttons: [
         {
           text: 'Send mail',
