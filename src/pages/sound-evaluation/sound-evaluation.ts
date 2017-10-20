@@ -146,7 +146,7 @@ export class SoundEvaluationPage {
     this.vol_icon = 'volume-down';
     return this.nativeAudio.preloadComplex(this.soundId, 'assets/audio/' + this.soundId + '.wav', this.volume, 1, 0).then(
       () => console.log('Sound loaded'),
-      err => console.log('Error loading sound: ' + err));
+      err => this.showError('Error loading sound: ' + err));
   }
 
   startSound() {
@@ -154,7 +154,8 @@ export class SoundEvaluationPage {
       return new Promise((resolve, reject) => resolve('playing'));
     }
     return this.nativeAudio.loop(this.soundId).then(
-      () => this.playing = true
+      () => this.playing = true,
+      err => this.showError('could not start sound: ' + err)
     );
   }
 
