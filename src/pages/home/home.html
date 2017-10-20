@@ -3,21 +3,31 @@
     <ion-title>
       Aloitus
     </ion-title>
+    <ion-buttons>
+      <button ion-button icon-only (click)="showActionSheet()">
+        <ion-icon name="more"></ion-icon>
+      </button>
+    </ion-buttons>
   </ion-navbar>
 </ion-header>
 
-<ion-content>
-  <ion-card>
-    <ion-card-header>
-      Tervetuloa tutkimukseen
-    </ion-card-header>
-    <ion-card-content>
-      Kiitos että osallistutte HYKS korvaklinikan tutkimukseen!
-      Täyttäkää alle omat tietonne ennen aloittamista.
-    </ion-card-content>
-  </ion-card>
+<ion-content padding>
+  <h1>Tervetuloa tutkimukseen</h1>
+  <p>
+    Kiitos että osallistutte HYKS korvaklinikan tutkimukseen. Tässä tutkimuksessa
+    selvitämme, miten henkilöt joilla esiintyy tinnitusta kuvailevat ääniaistimuksia.
+  </p>
+  <p>
+    Tutkimuksessa kuulette erilaisia ääniä ja tehtävänänne on arvioida, kuinka
+    hyvin ehdotetut adjektiivit kuvaavat kyseistä ääntä. Näiden äänien lisäksi
+    pyydämme myös että arvioitte kuinka hyvin nämä samat adjektiivit kuvaavat
+    omaa tinnitustanne.
+  </p>
+  <p>
+    Kun olette valmis aloittamaan, täyttäkää alle omat tietonne ja painakaa 'Aloita'
+  </p>
 
-  <form [formGroup]="info" (ngSubmit)="startEvaluation(info)">
+  <form [formGroup]="info" (ngSubmit)="startEvaluation(info)" padding>
     <ion-list>
       <ion-item>
         <ion-label floating>Ikä</ion-label>
@@ -26,10 +36,10 @@
       <ion-item>
         <ion-label>Sukupuoli</ion-label>
         <ion-select formControlName="gender">
-          <ion-option>Nainen</ion-option>
-          <ion-option>Mies</ion-option>
-          <ion-option>Muu</ion-option>
-          <ion-option>En halua kertoa</ion-option>
+          <ion-option value="f">Nainen</ion-option>
+          <ion-option value="m">Mies</ion-option>
+          <ion-option value="other">Muu</ion-option>
+          <ion-option value="na">En halua kertoa</ion-option>
         </ion-select>
       </ion-item>
     </ion-list>

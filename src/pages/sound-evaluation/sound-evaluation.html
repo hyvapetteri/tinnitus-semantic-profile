@@ -52,7 +52,7 @@
         Kuinka samankaltainen kuulemasi ääni on oman tinnituksesi kanssa?
       </ion-item-divider>
       <ion-item align-items-center *ngIf="!tinnitus_trial">
-        <ion-range formControlName="similarity" item-content>
+        <ion-range formControlName="similarity" item-content min="-50" max="50">
           <ion-label range-left>
             <ion-icon
               [style.visibility]="(submitAttempted && profile.get('similarity').hasError('required'))?'visible':'hidden'"
@@ -70,7 +70,7 @@
         Kuinka hyvin seuraavat adjektiivit kuvaavat omaa tinnitustasi?
       </ion-item-divider>
       <ion-item *ngFor="let attr of attributes" align-items-center>
-        <ion-range [formControlName]="attr.key" item-content>
+        <ion-range [formControlName]="attr.key" item-content min="-50" max="50">
           <ion-label range-left fixed>{{attr.name}}</ion-label>
           <ion-label range-left>
             <ion-icon

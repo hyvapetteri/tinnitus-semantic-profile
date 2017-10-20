@@ -1,8 +1,10 @@
 import { Component, ViewChild } from '@angular/core';
 import { NavController, NavParams, AlertController, Content, Platform } from 'ionic-angular';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
+
 import { NativeAudio } from '@ionic-native/native-audio';
-import { File } from '@ionic-native/file';
+import { SQLite, SQLiteObject, SQLiteDatabaseConfig } from '@ionic-native/sqlite';
+
 import { UserProvider } from '../../providers/user/user';
 import { HomePage } from '../home/home';
 
@@ -66,41 +68,50 @@ export const SOUND_ATTRIBUTES: Array<{key: string, name: string}> = [
 export class SoundEvaluationPage {
   private profile: FormGroup;
   private attributes: Array<{key:string, name:string}>;
-  private outputFile: string;
-  private output: Array<string> = [];
   private submitAttempted: boolean = false;
   private playing: boolean = false;
   private soundId: string;
   private sounds: Array<string>;
   private soundIndex: number;
   private uid: string;
-  private volume: number;
+  private db_settings: SQLiteDatabaseConfig;
+  private volume: number = 0;
   private vol_icon: string;
   private tinnitus_trial: boolean;
   @ViewChild(Content) content: Content;
 
   constructor(private formBuilder: FormBuilder, private nativeAudio: NativeAudio,
-              private file: File,
+              private sqlite: SQLite,
               private userProvider: UserProvider, public navCtrl: NavController,
               public navParams: NavParams, public alertCtrl: AlertController,
               public platform: Platform) {
 
-    console.log('SoundEvaluationPage constructor!');
     this.uid = this.userProvider.username;
+    this.db_settings = {
+      name: this.uid + '.db',
+      iosDatabaseLocation: 'Documents'
+    };
     this.tinnitus_trial = true;
     this.soundId = 'tinnitus';
 
     this.platform.ready().then(() => {
-      // trigger build at ionic dashboard
-      this.outputFile = 'ratings-' + this.uid + '.txt';
-      let basic_info_text = 'uid: ' + this.uid + ', age: ' + this.userProvider.age + ', gender: ' + this.userProvider.gender + '\n';
-      this.file.checkDir(this.file.dataDirectory, 'tinnitus-semantics-experiment')
-        .then(
-          _ => console.log('App directory found.'),
-          err => this.file.createDir(this.file.dataDirectory, 'tinnitus-semantics-experiment', false)
-        )
-        .then(_ => this.file.writeFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, basic_info_text, true))
-        .catch(err => this.showError('Could not create log file: ' + err));
+      this.sqlite.create(this.db_settings).then((db: SQLiteObject) => {
+        db.executeSql('CREATE TABLE IF NOT EXISTS info (id INTEGER PRIMARY KEY, age INTEGER, gender TEXT)', {}).then(
+          () => {
+            return db.executeSql('INSERT INTO info (id, age, gender) VALUES (?,?,?)',
+              [Number.parseInt(this.uid, 32), this.userProvider.age, this.userProvider.gender]);
+          },
+          err => {
+            throw new Error('info table not created: ' + err);
+          }
+        ).then(() => {
+          return db.executeSql('CREATE TABLE IF NOT EXISTS ratings (id INTEGER PRIMARY KEY AUTOINCREMENT, answer TEXT)', {});
+        }).then(() => {
+          return db.close();
+        }).catch(err => {
+          this.showError('Error in creating tables: ' + err);
+        });
+      }).catch(err => this.showError('Could not open db: ' + err));
     });
 
     this.sounds = SOUNDS;
@@ -131,7 +142,7 @@ export class SoundEvaluationPage {
 
   loadSound(snd_idx) {
     this.soundId = this.sounds[snd_idx];
-    this.volume = 0.6;
+    this.volume = 0.4;
     this.vol_icon = 'volume-down';
     return this.nativeAudio.preloadComplex(this.soundId, 'assets/audio/' + this.soundId + '.wav', this.volume, 1, 0).then(
       () => console.log('Sound loaded'),
@@ -179,7 +190,7 @@ export class SoundEvaluationPage {
   updateVolumeIcon() {
     if (this.volume <= 0.2) {
       this.vol_icon = 'volume-mute';
-    } else if (this.volume <= 0.7) {
+    } else if (this.volume <= 0.6) {
       this.vol_icon = 'volume-down';
     } else {
       this.vol_icon = 'volume-up';
@@ -199,8 +210,11 @@ export class SoundEvaluationPage {
         let tmp_profile = Object.assign({}, this.profile.value);
         tmp_profile.sound_id = this.soundId;
         tmp_profile.volume = this.volume;
-        this.output.push(JSON.stringify(tmp_profile));
-        return this.file.writeExistingFile(this.file.dataDirectory, 'tinnitus-semantics-experiment/' + this.outputFile, this.output.join('\n'));
+        tmp_profile.timestamp = Date.now();
+        return this.sqlite.create(this.db_settings).then((db: SQLiteObject) => {
+          return db.executeSql('INSERT INTO ratings (answer) VALUES (?)', [JSON.stringify(tmp_profile)])
+            .then(() => db.close());
+        });
       }).then(() => {
         this.soundIndex += 1;
         if (this.soundIndex == this.sounds.length) {
@@ -224,12 +238,8 @@ export class SoundEvaluationPage {
   showError(message:string) {
     let alert = this.alertCtrl.create({
       title: 'Virhe',
-      subTitle: 'Tapahtui virhe: ' + message,
-      buttons: [
-        {
-          text: 'OK'
-        }
-      ]
+      message: 'Tapahtui virhe: ' + message,
+      buttons: ['OK']
     });
     alert.present();
   }
@@ -237,14 +247,10 @@ export class SoundEvaluationPage {
   showInstructions() {
     let alert = this.alertCtrl.create({
       title: 'Seuraava vaihe',
-      subTitle: `Nyt tehtävänä
+      message: `Nyt tehtävänä
       on arvioida kuulokkeista soitettavia ääniä samalla tavalla kuin äsken
       tinnitusäänen osalta. Aloita painamalla play-nappia alapalkista`,
-      buttons: [
-        {
-          text: 'OK'
-        }
-      ]
+      buttons: ['OK']
     });
     alert.present();
   }
@@ -252,10 +258,14 @@ export class SoundEvaluationPage {
   finish() {
     let alert = this.alertCtrl.create({
       title: 'Lopeta tutkimus',
-      subTitle: `Olet lopettamassa tutkimuksen. Tutkimusta ei voi enää jatkaa
+      message: `Olet lopettamassa tutkimuksen. Tutkimusta ei voi enää jatkaa
       samasta kohdasta. Haluatko lopettaa? Varmistathan että
       osallistujatunnisteesi ` + this.uid + ` on merkitty suostumuslomakkeeseen.`,
       buttons: [
+        {
+          text: 'Peruuta',
+          role: 'cancel'
+        },
         {
           text: 'Kyllä',
           handler: () => {
@@ -263,10 +273,6 @@ export class SoundEvaluationPage {
             this.userProvider.username = '';
             this.navCtrl.setRoot(HomePage);
           }
-        },
-        {
-          text: 'Peruuta',
-          role: 'cancel'
         }
       ]
     });
@@ -276,7 +282,7 @@ export class SoundEvaluationPage {
   allDone() {
     let alert = this.alertCtrl.create({
       title: 'Kiitos!',
-      subTitle: `Kiitos osallistumisestanne tutkimukseen! Varmistathan että
+      message: `Kiitos osallistumisestanne tutkimukseen! Varmistathan että
       osallistujatunnisteesi ` + this.uid + ` on merkitty suostumuslomakkeeseen.`,
       buttons: [
         {

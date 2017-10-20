@@ -4,7 +4,8 @@ import { IonicApp, IonicErrorHandler, IonicModule } from 'ionic-angular';
 import { SplashScreen } from '@ionic-native/splash-screen';
 import { StatusBar } from '@ionic-native/status-bar';
 import { NativeAudio } from '@ionic-native/native-audio';
-import { File } from '@ionic-native/file';
+import { SocialSharing } from '@ionic-native/social-sharing';
+import { SQLite } from '@ionic-native/sqlite';
 
 import { MyApp } from './app.component';
 import { HomePage } from '../pages/home/home';
@@ -33,7 +34,8 @@ import { UserProvider } from '../providers/user/user';
     {provide: ErrorHandler, useClass: IonicErrorHandler},
     UserProvider,
     NativeAudio,
-    File
+    SocialSharing,
+    SQLite
   ]
 })
 export class AppModule {}
