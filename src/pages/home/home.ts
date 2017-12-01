@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { NavController, AlertController, ActionSheetController, LoadingController, Platform } from 'ionic-angular';
 import { SQLite, SQLiteObject, SQLiteDatabaseConfig } from '@ionic-native/sqlite';
-import { SocialSharing } from '@ionic-native/social-sharing';
+import { EmailComposer, EmailComposerOptions } from '@ionic-native/email-composer';
+import { File } from '@ionic-native/file';
 
 import { SoundEvaluationPage } from '../sound-evaluation/sound-evaluation';
 import { UserProvider } from '../../providers/user/user';
@@ -16,7 +17,8 @@ export class HomePage {
   private db_settings: SQLiteDatabaseConfig;
 
   constructor(private formBuilder: FormBuilder, private userProvider: UserProvider,
-      private sqlite: SQLite, private socialSharing: SocialSharing,
+      private sqlite: SQLite, private emailComposer: EmailComposer,
+      private file: File,
       public platform: Platform, public actionsheetCtrl: ActionSheetController,
       public navCtrl: NavController, public alertCtrl: AlertController,
       public loadingCtrl: LoadingController) {
@@ -94,7 +96,7 @@ export class HomePage {
     loading.present();
 
     var users:string[] = [];
-    var message:string = '';
+    //var message:string = '';
 
     this.sqlite.create(this.db_settings).then((db: SQLiteObject) => {
       return db.executeSql('SELECT * FROM users', {}).then(data => {
@@ -106,47 +108,67 @@ export class HomePage {
           }
         }
         console.log('We got ' + users.length + ' users: '+ tmp_user_string + '. Starting data fetch');
-      }).then(() => {
-        return Promise.all(users.map((id => {
-          let tmp_datastring:string = '';
-          return this.sqlite.create({name: id + '.db', iosDatabaseLocation: 'Documents'})
-            .then((user_db: SQLiteObject) => {
-              console.log('db ' + id + '.db open.');
-              return user_db.executeSql('SELECT * FROM info', {}).then(data => {
-                console.log('for ' + id + ' got ' + data.rows.length + ' rows info');
-                if (data.rows.length > 0) {
-                  let r = data.rows.item(0);
-                  tmp_datastring = tmp_datastring.concat('id: ' + id + ', age: ' + r.age + ', gender: ' + r.gender + '\n');
-                }
-              }).then(() => {
-                return user_db.executeSql('SELECT * FROM ratings ORDER BY id', {}).then(data => {
-                  console.log('for ' + id + ' got ' + data.rows.length + ' rows ratings');
-                  if (data.rows.length > 0) {
-                    for (let i = 0; i < data.rows.length; i++) {
-                      let r = data.rows.item(i);
-                      tmp_datastring = tmp_datastring.concat(r.answer + '\n');
-                    }
-                  }
-                  console.log('for user ' + id + ', we got data: ' + tmp_datastring);
-                });
-              }).then(() => {
-                return user_db.close();
-              }).catch(err => console.log('Error while reading from user db ' + id + '.db'));
-            }).then(() => {
-              return new Promise(resolve => resolve(tmp_datastring));
-            });
-        }))).then(results => {
-          console.log('***** got ' + results.length + ' results!!!');
-          for (let i = 0; i < results.length; i++) {
-            message = message.concat(results[i] + '\n*******\n\n');
-          }
-          console.log('***** the full message: ' + message);
-        });
+
+        // The commented section below writes all data as a string to be
+        // sent in plaintext in the email message
+
+        // }).then(() => {
+
+        // return Promise.all(users.map((id => {
+        //   let tmp_datastring:string = '';
+        //   return this.sqlite.create({name: id + '.db', iosDatabaseLocation: 'Documents'})
+        //     .then((user_db: SQLiteObject) => {
+        //       console.log('db ' + id + '.db open.');
+        //       return user_db.executeSql('SELECT * FROM info', {}).then(data => {
+        //         console.log('for ' + id + ' got ' + data.rows.length + ' rows info');
+        //         if (data.rows.length > 0) {
+        //           let r = data.rows.item(0);
+        //           tmp_datastring = tmp_datastring.concat('id: ' + id + ', age: ' + r.age + ', gender: ' + r.gender + '\n');
+        //         }
+        //       }).then(() => {
+        //         return user_db.executeSql('SELECT * FROM ratings ORDER BY id', {}).then(data => {
+        //           console.log('for ' + id + ' got ' + data.rows.length + ' rows ratings');
+        //           if (data.rows.length > 0) {
+        //             for (let i = 0; i < data.rows.length; i++) {
+        //               let r = data.rows.item(i);
+        //               tmp_datastring = tmp_datastring.concat(r.answer + '\n');
+        //             }
+        //           }
+        //           console.log('for user ' + id + ', we got data: ' + tmp_datastring);
+        //         });
+        //       }).then(() => {
+        //         return user_db.close();
+        //       }).catch(err => console.log('Error while reading from user db ' + id + '.db'));
+        //     }).then(() => {
+        //       return new Promise(resolve => resolve(tmp_datastring));
+        //     });
+        // }))).then(results => {
+        //   console.log('***** got ' + results.length + ' results!!!');
+        //   for (let i = 0; i < results.length; i++) {
+        //     message = message.concat(results[i] + '\n*******\n\n');
+        //   }
+        //   console.log('***** the full message: ' + message);
+        // });
+
+
       }).then(() => {
         return db.close();
       });
-    }).catch(err => console.log('db error: ' + err)).then(() => {
-      return this.socialSharing.shareViaEmail(message, 'Tinnitus data', ['petteri.hyvarinen@iki.fi'])
+    }).catch(
+      err => console.log('db error: ' + err)
+    ).then(() => {
+      let files:string[] = [];
+      for (let u of users) {
+        files.push(this.file.documentsDirectory + '/' + u + '.db');
+      }
+
+      let email_options:EmailComposerOptions = {
+        to: 'petteri.hyvarinen@iki.fi',
+        subject: 'Tinnitus data',
+        body: 'Data from ' + users.length + ' subjects.',
+        attachments: files
+      }
+      return this.emailComposer.open(email_options)
         .catch(err => console.log('Could not send mail: ' + err));
     }).then(() => loading.dismiss());
 
